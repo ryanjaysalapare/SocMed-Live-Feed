@@ -1,0 +1,591 @@
+<!--
+"StAuth10222: I, Ryan Jay Salapare, 000823653 certify that this material is my original work. 
+No other person's work has been used without due acknowledgement. 
+I have not made my work available to anyone else."
+-->
+
+<!DOCTYPE html>
+<head>
+  <title>Social Media Disaster Monitoring Application</title>
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/vuex@4"></script>
+  <script src="https://unpkg.com/vue-router@4"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+
+  <style>
+    .router-link-active{
+      background:skyblue;
+    }
+
+    .nav-link {
+      color: whitesmoke !important;
+      padding-left: 30px;
+      padding-right: 30px;
+    }
+
+    body {
+      font-size: 24px;
+    }
+
+    a {
+      padding: 10px;
+    }
+
+    td,tr,th,table {
+      border: 2px solid black;
+      padding: 20px;
+      font-size: 32px;
+    }
+
+    table {
+      border-collapse: collapse;
+    }
+  </style>
+
+</head>
+<body>
+
+  <div id="app">
+    <nav class="navbar navbar-dark bg-dark mr-auto" >    
+      <ul class="nav">
+        <!-- use the router-link component for navigation. -->
+        <!-- specify the link by passing the `to` prop. -->
+        <!-- `<router-link>` will render an `<a>` tag with the correct `href` attribute -->
+        <li class="nav-item">
+          <router-link to="/" class="nav-link" >Home</router-link>
+        </li>
+        <li class="nav-item">
+          <router-link to="/livefeed" class="nav-link" >Live Feed</router-link>
+        </li>
+        <li class="nav-item">
+          <router-link to="/analytics" class="nav-link" >Analytics</router-link>
+        </li>
+      </ul>   
+    </nav>
+
+    <!-- route outlet -->
+    <!-- component matched by the route will render here -->
+    <router-view></router-view>
+  </div>
+  <script>
+
+    //Create the connection
+    var socket = io();      
+
+    // create a plugin for our store that listens for the update_feed
+    // message and commits mutations when it does occur
+    const plugin = function createWebSocketPlugin() {
+      return (store) => {
+        socket.on('post', data => {
+          store.commit('update_feed', data)
+        });
+      }
+    }
+
+    // the store will have a state variable that is updated by
+    // the mutations, it uses the above plugin
+    const store = Vuex.createStore({
+      state () { return {
+        posts:[],
+        displayPosts: [],
+        analytics: [],
+
+        fireProblemCheckBox: true,
+        floodProblemCheckBox: true,
+        powerOutageProblemCheckBox: true,
+        medicalProblemCheckBox: true,
+
+        lowPrioCheckbox: true,
+        mediumPrioCheckbox: true,
+        highPrioCheckbox: true,
+        criticalPrioCheckbox: true,
+
+        fireProbLowPrio: 0,
+        fireProbMediumPrio: 0,
+        fireProbHighPrio: 0,
+        fireProbCriticalPrio: 0,
+        totalFireProblems: 0,
+
+        floodProbLowPrio: 0,
+        floodProbMediumPrio: 0,
+        floodProbHighPrio: 0,
+        floodProbCriticalPrio: 0,
+        totalFloodProblems: 0,
+
+        powerProbLowPrio: 0,
+        powerProbMediumPrio: 0,
+        powerProbHighPrio: 0,
+        powerProbCriticalPrio: 0,
+        totalPowerOutageProblems: 0,
+
+        medicalProbLowPrio: 0,
+        medicalProbMediumPrio: 0,
+        medicalProbHighPrio: 0,
+        medicalProbCriticalPrio: 0,
+        totalMedicalProblems: 0,
+
+        totalLows: 0,
+        totalMediums: 0,
+        totalHighs: 0,
+        totalCriticals: 0,
+        finalResult: 0,
+  
+      }},
+
+      mutations: {
+        update_feed(state, data){
+          state.posts.push(data);
+          state.displayPosts = state.posts; 
+        },
+
+        setFireCheckBox(state, fireProblemChecked){
+          state.fireProblemCheckBox = fireProblemChecked;  
+        },
+
+        setFloodCheckBox(state, floodProblemChecked){
+          state.floodProblemCheckBox = floodProblemChecked; 
+        },
+
+        setPowerOutageCheckBox(state, powerOutageProblemChecked){
+          state.powerOutageProblemCheckBox = powerOutageProblemChecked;  
+        },
+
+        setMedicalCheckBox(state, medicalProblemChecked){
+          state.medicalProblemCheckBox = medicalProblemChecked;   
+        },
+
+        setLowPrioCheckBox(state, lowPrioChecked){
+          state.lowPrioCheckbox = lowPrioChecked;        
+        },
+
+        setMediumPrioCheckBox(state, mediumPrioChecked){
+          state.mediumPrioCheckbox = mediumPrioChecked;      
+        },
+
+        setHighPrioCheckBox(state, highPrioChecked){
+          state.highPrioCheckbox = highPrioChecked;
+        },
+
+        setCriticalPrioCheckBox(state, criticalPrioChecked){
+          state.criticalPrioCheckbox = criticalPrioChecked;       
+        },
+
+      },
+      getters: {
+        getDisplayedPosts: (state) => {
+          if(state.fireProblemCheckBox == true && state.floodProblemCheckBox == true  && state.powerOutageProblemCheckBox == true && state.medicalProblemCheckBox == true
+            && state.lowPrioCheckbox == true && state.mediumPrioCheckbox == true && state.highPrioCheckbox == true && state.criticalPrioCheckbox == true){             
+            return state.displayPosts;
+          } 
+          else {
+            if(state.fireProblemCheckBox == false && state.lowPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Fire" && post.priority !== "Low"})           
+            }
+          
+            if(state.fireProblemCheckBox == false && state.mediumPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Fire" && post.priority !== "Medium"})
+            }
+
+            if(state.fireProblemCheckBox == false && state.highPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Fire" && post.priority !== "High"})
+            }
+
+            if(state.fireProblemCheckBox == false && state.criticalPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Fire" && post.priority !== "Critical"})
+            }
+
+            if(state.floodProblemCheckBox == false && state.lowPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Flood" && post.priority !== "Low"})
+            }
+
+            if(state.floodProblemCheckBox == false && state.mediumPrioCheckbox == false){
+            state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Flood" && post.priority !== "Medium"})
+            }
+
+            if(state.floodProblemCheckBox == false  && state.highPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Flood" && post.priority !== "High"})
+            }
+
+            if(state.floodProblemCheckBox == false && state.criticalPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Flood" && post.priority !== "Critical"})
+            }
+
+            if(state.powerOutageProblemCheckBox == false && state.lowPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Power" && post.priority !== "Low"})
+            }
+
+            if(state.powerOutageProblemCheckBox == false && state.mediumPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Power" && post.priority !== "Medium"})
+            }
+
+            if(state.powerOutageProblemCheckBox == false && state.highPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Power" && post.priority !== "High"})
+            }
+
+            if(state.powerOutageProblemCheckBox == false && state.criticalPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Power" && post.priority !== "Critical"})
+            }
+
+            if(state.medicalProblemCheckBox == false && state.lowPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Medical" && post.priority !== "Low"})
+            }
+
+            if(state.medicalProblemCheckBox == false && state.mediumPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Medical" && post.priority !== "Medium"})
+            }
+
+            if(state.medicalProblemCheckBox == false && state.highPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Medical" && post.priority !== "High"})
+            }
+
+            if(state.medicalProblemCheckBox == false && state.criticalPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Medical" && post.priority !== "Critical"})
+            }
+
+            if(state.fireProblemCheckBox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Fire" })           
+            }
+
+            if(state.floodProblemCheckBox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Flood"})
+            }
+
+            if(state.powerOutageProblemCheckBox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Power"})
+            }
+
+            if(state.medicalProblemCheckBox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.problem !== "Medical"})
+            }
+
+            if(state.lowPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.priority !== "Low"})
+            }
+
+            if(state.mediumPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.priority !== "Medium"})
+            }
+
+            if(state.highPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.priority !== "High"})
+            }
+
+            if(state.criticalPrioCheckbox == false){
+              state.displayPosts = state.displayPosts.filter(post => {return post.priority !== "Critical"})
+            }
+                       
+            return state.displayPosts;
+          }          
+        },
+
+        getTotalAnalytics: (state) => {
+          for(var i=0; i<state.posts.length; i++){
+              if(state.posts[i].problem == "Fire" && state.posts[i].priority == "Low"){
+                state.fireProbLowPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Fire" && state.posts[i].priority == "Medium"){
+                state.fireProbMediumPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Fire" && state.posts[i].priority == "High"){
+                state.fireProbHighPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Fire" && state.posts[i].priority == "Critical"){
+                state.fireProbCriticalPrio ++;         
+              }
+            
+              if(state.posts[i].problem == "Flood" && state.posts[i].priority == "Low"){
+                state.floodProbLowPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Flood" && state.posts[i].priority == "Medium"){
+                state.floodProbMediumPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Flood" && state.posts[i].priority == "High"){
+                state.floodProbHighPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Flood" && state.posts[i].priority == "Critical"){
+                state.floodProbCriticalPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Power" && state.posts[i].priority == "Low"){
+                state.powerProbLowPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Power" && state.posts[i].priority == "Medium"){
+                state.powerProbMediumPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Power" && state.posts[i].priority == "High"){
+                state.powerProbHighPrio ++;         
+              }
+
+              if(state.posts[i].problem == "Power" && state.posts[i].priority == "Critical"){
+                state.powerProbCriticalPrio ++;         
+              }
+            
+              if(state.posts[i].problem == "Medical" && state.posts[i].priority == "Low"){
+                state.medicalProbLowPrio++;         
+              }
+
+              if(state.posts[i].problem == "Medical" && state.posts[i].priority == "Medium"){
+                state.medicalProbMediumPrio++;         
+              }
+
+              if(state.posts[i].problem == "Medical" && state.posts[i].priority == "High"){
+                state.medicalProbHighPrio++;         
+              }
+
+              if(state.posts[i].problem == "Medical" && state.posts[i].priority == "Critical"){
+                state.medicalProbCriticalPrio++;         
+              }
+            }
+
+            state.totalLows = state.fireProbLowPrio + state.floodProbLowPrio + state.powerProbLowPrio + state.medicalProbLowPrio;
+            state.totalMediums = state.fireProbMediumPrio + state.floodProbMediumPrio + state.powerProbMediumPrio + state.medicalProbMediumPrio;
+            state.totalHighs = state.fireProbHighPrio + state.floodProbHighPrio + state.powerProbHighPrio + state.medicalProbHighPrio;
+            state.totalCriticals = state.fireProbCriticalPrio + state.floodProbCriticalPrio + state.powerProbCriticalPrio + state.medicalProbCriticalPrio;
+            state.totalFireProblems = state.fireProbLowPrio + state.fireProbMediumPrio + state.fireProbHighPrio + state.fireProbCriticalPrio;
+            state.totalFloodProblems = state.floodProbLowPrio + state.floodProbMediumPrio + state.floodProbHighPrio + state.floodProbCriticalPrio;
+            state.totalPowerOutageProblems = state.powerProbLowPrio + state.powerProbMediumPrio + state.powerProbHighPrio + state.powerProbCriticalPrio;
+            state.totalMedicalProblems = state.medicalProbLowPrio + state.medicalProbMediumPrio + state.medicalProbHighPrio + state.medicalProbCriticalPrio;
+            state.finalResult= state.totalLows + state.totalMediums + state.totalHighs + state.totalCriticals;                             
+
+          state.analytics = [
+            {namerow: "Low", column1: state.fireProbLowPrio, column2: state.floodProbLowPrio, column3: state.powerProbLowPrio, column4: state.medicalProbLowPrio, column5: state.totalLows},
+            {namerow: "Medium", column1: state.fireProbMediumPrio, column2: state.floodProbMediumPrio, column3: state.powerProbMediumPrio, column4: state.medicalProbMediumPrio, column5: state.totalMediums},
+            {namerow: "High", column1: state.fireProbHighPrio, column2: state.floodProbHighPrio, column3: state.powerProbHighPrio, column4: state.medicalProbHighPrio, column5: state.totalHighs},
+            {namerow: "Critical", column1: state.fireProbCriticalPrio, column2: state.floodProbCriticalPrio, column3: state.powerProbCriticalPrio, column4: state.medicalProbCriticalPrio, column5: state.totalCriticals},
+            {namerow: "Total", column1: state.totalFireProblems, column2: state.totalFloodProblems, column3: state.totalPowerOutageProblems, column4: state.totalMedicalProblems, column5: state.finalResult}
+          ]
+          
+          return state.analytics;
+        },       
+      },
+
+      plugins: [plugin()],
+    })
+
+    //Define route components
+    //Creation of the route components (Home, Live Feed, Analytics)
+    const Home = {template: `<div class=" py-4" style="background-color: skyblue;">
+                    <h1 class="text-center font-weight-bold">Home</h1> <br />
+                    <h3 class="container">
+                      This application will start a server that simulates a machine learning algorithm's categorization of social media posts 
+                      following a disaster.  The server will randomly generate social media posts, including a name, (working) image 
+                      link, and content, as well as a categorization of the problem (fire, flood, power outage, medical) and the 
+                      priority (low, medium, high, critical).  The server will periodically send the data for each simulated social 
+                      media post to the front-end as a JavaScript object via Websockets. 
+                    </h3>
+                    <br />
+                    <h3 class="container">
+                      The LIVE FEED page contains a "live feed" of the social
+                      media posts. The livefeed can be categorized and will have checkboxes to filter 
+                      the problem category and priority level.
+                    </h3>
+                    <br />
+                    <h3 class="container">
+                      The ANALYTICS page contains a table summarizing the total
+                      number of each problem type and priority level.
+                    </h3>                
+                  </div>`
+    } 
+
+    const Analytics = {template: `<div>
+                                    <h1 class="text-center font-weight-bold my-5">Analytics</h1>
+                                    <div class="m-5">
+                                      <div class="m-5 bg-light">
+                                        <table class="table table-striped">
+                                          <tbody>
+                                            <tr class="table-dark">
+                                              <th></th>
+                                              <th>Fire</th>
+                                              <th>Flood</th>
+                                              <th>Power</th>
+                                              <th>Medical</th>
+                                              <th>Total</th>
+                                            </tr>
+                                            <tr v-for="(stat, index) in liveStatistics"
+                                                :key="index">
+                                              <th scope="row">{{stat.namerow}}</th>
+                                              <td>{{stat.column1}}</td>
+                                              <td>{{stat.column2}}</td>
+                                              <td>{{stat.column3}}</td>
+                                              <td>{{stat.column4}}</td>
+                                              <td>{{stat.column5}}</td>
+                                            </tr>
+                                          </tbody>
+                                        </table> 
+                                      </div> 
+                                    </div>      
+                                  </div>`,
+
+                                  computed: {
+                                    liveStatistics(){
+                                      return this.$store.getters.getTotalAnalytics
+                                    },                               
+                                  },                                                         
+                      }
+ 
+    const LiveFeed = {
+                      template: `<div>
+                        <h1 class="text-center my-5 font-weight-bold">Live Feed</h1>
+                        <div class="row m-5">
+                          <div class="col-6 border border-dark rounded py-3 bg-light">
+                            <h4>Problem Type</h4>
+                            <div>
+                              <input type="checkbox" id="fire" value="Fire" v-model="checkedFire">
+                              <label class="mx-3" for="fire">Fire</label> <br />
+                              <input type="checkbox" id="flood" value="Flood" v-model="checkedFlood">
+                              <label class="mx-3" for="flood">Flood</label> <br />
+                              <input type="checkbox" id="power"  value="Power" v-model="checkedPowerOutage">
+                              <label class="mx-3" for="power"> Power Outage</label> <br />
+                              <input type="checkbox" id="medical"  value="Medical" v-model="checkedMedical">
+                              <label class="mx-3" for="medical"> Medical</label> <br />
+                            </div>                     
+                          </div>
+                          <div class="col-6 border border-dark rounded py-3 bg-light">
+                            <h4>Priority Level</h4>
+                            <div>
+                              <input type="checkbox" id="priority1" name="priority1" value="Low" v-model="checkedLowPriority">
+                              <label class="text-info mx-3" for="priority1"> Low</label> <br />
+                              <input type="checkbox" id="priority2" name="priority2" value="Medium" v-model="checkedMediumPriority">
+                              <label class="text-warning mx-3" for="priority2"> Medium</label> <br />
+                              <input type="checkbox" id="priority3" name="priority3" value="High" v-model="checkedHighPriority">
+                              <label class="text-danger mx-3" for="priority3"> High</label> <br />
+                              <input type="checkbox" id="priority4" name="priority4" value="Critical" v-model="checkedCriticalPriority">
+                              <label class="mx-3" for="priority4"><strong>Critical</strong></label> <br />
+                            </div>                        
+                          </div>         
+                        </div>
+                        <div class="m-5">
+                          <div class="m-5 bg-light">
+                            <table class="table table-striped">
+                              <tbody>
+                                <tr class="table-dark"><th>Name</th><th>Image</th><th>Problem</th><th>Priority</th><th>Content</th></tr>
+                                <tr v-for="(post, index) in currentLiveFeed"
+                                    :key="index">
+                                  <td>{{post.name}}</td>
+                                  <td><img v-bind:src="post.image"></td>
+                                  <td>{{ post.problem}}</td>
+                                  <td>{{ post.priority}}</td>
+                                  <td>{{ post.content }}</td>
+                                </tr>
+                              </tbody>
+                            </table> 
+                          </div> 
+                        </div>                    
+                      </div>`,
+
+                      computed: {
+                        currentLiveFeed(){
+                          return this.$store.getters.getDisplayedPosts
+                        },
+                        checkedFire:{
+                          set(val){
+                            this.$store.commit("setFireCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.fireProblemCheckBox;
+                          }
+                        },
+                        checkedFlood:{
+                          set(val){
+                            this.$store.commit("setFloodCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.floodProblemCheckBox;
+                          }
+                        },
+                        checkedPowerOutage:{
+                          set(val){
+                            this.$store.commit("setPowerOutageCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.powerOutageProblemCheckBox;
+                          }
+                        },
+                        checkedMedical:{
+                          set(val){
+                            this.$store.commit("setMedicalCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.medicalProblemCheckBox;
+                          }
+                        },
+                        checkedLowPriority:{
+                          set(val){
+                            this.$store.commit("setLowPrioCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.lowPrioCheckbox;
+                          }
+                        },
+                        checkedMediumPriority:{
+                          set(val){
+                            this.$store.commit("setMediumPrioCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.mediumPrioCheckbox;
+                          }
+                        },
+                        checkedHighPriority:{
+                          set(val){
+                            this.$store.commit("setHighPrioCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.highPrioCheckbox;
+                          }
+                        },
+                        checkedCriticalPriority:{
+                          set(val){
+                            this.$store.commit("setCriticalPrioCheckBox", val);
+                          },
+                          get(){
+                            return this.$store.state.criticalPrioCheckbox;
+                          }
+                        },
+
+                      },
+
+                      methods: {
+                        update_feed(){
+                          this.$store.commit('update_feed')
+                        },
+                      }
+                }
+
+    //Create and mount the root instance.
+     const app = Vue.createApp({})
+     
+    //Creation of the routes
+    //Each route should map to a component
+    const routes = [
+        {path: '/', component: Home},
+        {path: '/livefeed/', component: LiveFeed},
+        {path: '/analytics', component: Analytics},
+      ]
+
+      //Creation of the router instances
+      const router = VueRouter.createRouter({
+        //Provide the history implementation to use.
+        history: VueRouter.createWebHashHistory(),
+        routes,
+      });
+
+      app.use(router);
+      // use the store, mount the app
+      app.use(store);
+      app.mount('#app');
+
+    </script>
+</body>
+</html>
